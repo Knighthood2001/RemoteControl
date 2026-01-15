@@ -54,6 +54,9 @@ int main()
             std::cout << "服务端回发数据失败" << std::endl;
         }
     }
+    // 关闭Socket，避免资源泄漏（先关客户端连接Socket，再关监听Socket）
+    closesocket(client_socket);
+    closesocket(server_socket);
     // 清除网络环境
     WSACleanup();
     return 0;

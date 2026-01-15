@@ -45,6 +45,8 @@ int main()
         receive_buffer[receive_len] = '\0';  // 添加字符串结束符，避免乱码
         std::cout << "client receive data: " << receive_buffer << std::endl;
     }
+    // 关闭客户端socket，避免资源泄漏
+    closesocket(client_socket);
     WSACleanup();
     return 0;
 }
