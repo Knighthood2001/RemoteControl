@@ -1,5 +1,6 @@
 ﻿#include <iostream>
 #include <Windows.h>
+#include <cstring>  // 用于 strlen 函数
 
 #pragma comment(lib, "ws2_32.lib")
 int main()
@@ -29,7 +30,12 @@ int main()
     }
     std::cout << "连接服务器成功\n" << std::endl;
     char buffer[1024] = "hello world!";
-    send(client_socket, buffer, sizeof(buffer), 0);
+    int send_len = send(client_socket, buffer, strlen(buffer)+1, 0);  // +1 携带字符串结束符 '\0'
+    if (send_len == SOCKET_ERROR) {
+        std::cout << "发送数据失败" << std::endl;
+        return 0;
+    }
+    std::cout << "客户端发送数据成功，发送长度：" << send_len << std::endl;
     // 等待接收数据
     char receive_buffer[1024];
     int receive_len = recv(client_socket, receive_buffer, 1024, 0);

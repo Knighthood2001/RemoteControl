@@ -1,5 +1,6 @@
 ﻿#include <iostream>
 #include <Windows.h>
+#include <cstring>  // 用于 strlen 函数
 
 #pragma comment(lib, "ws2_32.lib")
 int main()
@@ -42,8 +43,10 @@ int main()
     int recv_len = recv(client_socket, buffer, 1024, 0);
     std::cout << "server recv data: " << buffer << std::endl;
     // 发送数据给客户端
-    send(client_socket, buffer, 1024, 0);
-
+    int send_len = send(client_socket, buffer, strlen(buffer) + 1, 0);
+    if (send_len == SOCKET_ERROR) {
+        std::cout << "服务端回发数据失败"<< std::endl;
+    }
     // 清除网络环境
     WSACleanup();
     return 0;
