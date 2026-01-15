@@ -12,9 +12,9 @@ int main()
         return 0;
     }
     // 创建socket
-    SOCKET server_socket = socket(AF_INET, SOCK_STREAM, 0);
-    if (server_socket == INVALID_SOCKET) {
-        std::cout << "创建socket失败\n" << std::endl;
+    SOCKET client_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (client_socket == INVALID_SOCKET) {
+        std::cout << "创建客户端socket失败\n" << std::endl;
         return 0;
     }
     SOCKADDR_IN server_addr;
@@ -23,16 +23,16 @@ int main()
     server_addr.sin_addr.S_un.S_addr = inet_addr("192.168.212.80");
 
     // 连接服务器
-    if (connect(server_socket, (sockaddr*)&server_addr, sizeof(SOCKADDR_IN)) == SOCKET_ERROR) {
+    if (connect(client_socket, (sockaddr*)&server_addr, sizeof(SOCKADDR_IN)) == SOCKET_ERROR) {
         std::cout << "连接服务器失败\n" << std::endl;
         return 0;
     }
     std::cout << "连接服务器成功\n" << std::endl;
     char buffer[1024] = "hello world!";
-    send(server_socket, buffer, sizeof(buffer), 0);
+    send(client_socket, buffer, sizeof(buffer), 0);
     // 等待接收数据
     char receive_buffer[1024];
-    int receive_len = recv(server_socket, receive_buffer, 1024, 0);
+    int receive_len = recv(client_socket, receive_buffer, 1024, 0);
     if (receive_len > 0) {
         std::cout << "client receive data: " << receive_buffer << std::endl;
     }
