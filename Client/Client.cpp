@@ -37,9 +37,12 @@ int main()
     }
     std::cout << "客户端发送数据成功，发送长度：" << send_len << std::endl;
     // 等待接收数据
-    char receive_buffer[1024];
-    int receive_len = recv(client_socket, receive_buffer, 1024, 0);
-    if (receive_len > 0) {
+    char receive_buffer[1024] = { 0 };  // 初始化数组，避免随机值;
+    int receive_len = recv(client_socket, receive_buffer, sizeof(receive_buffer) - 1, 0);  // 预留1个位置给 '\0'
+    if (receive_len == SOCKET_ERROR) {
+        std::cout << "接收数据失败，错误码：" << WSAGetLastError() << std::endl;
+    }else if (receive_len > 0) {
+        receive_buffer[receive_len] = '\0';  // 添加字符串结束符，避免乱码
         std::cout << "client receive data: " << receive_buffer << std::endl;
     }
     WSACleanup();

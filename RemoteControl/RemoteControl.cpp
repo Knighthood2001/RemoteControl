@@ -39,13 +39,20 @@ int main()
     std::cout << "等待客户端连接\n" << std::endl;
     SOCKET client_socket = accept(server_socket, (sockaddr*)&client_addr, &client_addr_len);
     // 等待客户端发送数据
-    char buffer[1024];
-    int recv_len = recv(client_socket, buffer, 1024, 0);
-    std::cout << "server recv data: " << buffer << std::endl;
-    // 发送数据给客户端
-    int send_len = send(client_socket, buffer, strlen(buffer) + 1, 0);
-    if (send_len == SOCKET_ERROR) {
-        std::cout << "服务端回发数据失败"<< std::endl;
+    char buffer[1024] = { 0 };  // 初始化数组，避免随机值;
+    int recv_len = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
+    if (recv_len == SOCKET_ERROR) {
+        std::cout << "客户端接收数据失败" << std::endl;
+    }
+    else if (recv_len > 0) {
+        buffer[recv_len] = '\0';  // 添加字符串结束符，避免乱码
+        std::cout << "server recv data: " << buffer << std::endl;
+
+        // 发送数据给客户端
+        int send_len = send(client_socket, buffer, strlen(buffer) + 1, 0);
+        if (send_len == SOCKET_ERROR) {
+            std::cout << "服务端回发数据失败" << std::endl;
+        }
     }
     // 清除网络环境
     WSACleanup();
