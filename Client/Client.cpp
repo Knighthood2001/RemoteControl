@@ -14,6 +14,7 @@ struct Packet {
     PacketHeader header; // 包头
     char body[]; // 包数据
 };
+int GetPacketLen(Packet* pck);
 int main()
 {
     // 初始化网络环境
@@ -53,7 +54,7 @@ int main()
         packet->header.body_len = 10;
         // 将数据拷贝到要发送的packet中
         memcpy(packet->body, buffer, 10);
-        int send_len = send(client_socket, (char*) & packet->header.magic, sizeof(PacketHeader)+packet->header.body_len, 0);  // +1 携带字符串结束符 '\0'
+        int send_len = send(client_socket, (char*) & packet->header.magic, GetPacketLen(packet), 0);  // +1 携带字符串结束符 '\0'
         if (send_len == SOCKET_ERROR) { 
             std::cout << "发送数据失败" << std::endl;
             return 0;
@@ -75,4 +76,9 @@ int main()
     closesocket(client_socket);
     WSACleanup();
     return 0;
+}
+int GetPacketLen(Packet* pck) {
+    if (pck != nullptr) {
+        return pck->header.body_len + sizeof(PacketHeader);
+    }
 }

@@ -16,6 +16,8 @@ struct Packet {
     char body[]; // 包数据
 };
 Packet* ParsePacket(char* buffer, int len);
+int GetPacketLen(Packet* pck);
+
 int main()
 {
     // 初始化网络环境
@@ -64,8 +66,8 @@ int main()
         }
         else if (recv_len > 0) {
             Packet* packet = ParsePacket(buffer, index);
-            index = index - packet->header.body_len + sizeof(PacketHeader);
-            memmove(buffer, buffer+packet->header.body_len+sizeof(PacketHeader), index);//把已经读取的数据删了
+            index = index - GetPacketLen(packet);
+            memmove(buffer, buffer + GetPacketLen(packet), index);//把已经读取的数据删了
             std::cout << "server recv data: " << packet->body << std::endl;
             free(packet);
             //// 发送数据给客户端
@@ -111,5 +113,9 @@ Packet* ParsePacket(char* buffer, int len){
         memcpy(&ppck->header, &pck.header, sizeof(PacketHeader));
         return ppck;
     }
-
+}
+int GetPacketLen(Packet* pck) {
+    if (pck != nullptr) {
+        return pck->header.body_len + sizeof(PacketHeader);
+    }
 }
