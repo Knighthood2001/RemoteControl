@@ -33,7 +33,7 @@ int main()
     SOCKADDR_IN server_addr;
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = ntohs(9999);
-    server_addr.sin_addr.S_un.S_addr = inet_addr("192.168.226.80");
+    server_addr.sin_addr.S_un.S_addr = inet_addr("192.168.0.80");
 
     // 连接服务器
     if (connect(client_socket, (sockaddr*)&server_addr, sizeof(SOCKADDR_IN)) == SOCKET_ERROR) {
@@ -43,10 +43,12 @@ int main()
     std::cout << "连接服务器成功\n" << std::endl;
 
     //////////////////////////////////////////////////////////////////////////////////////
-    char buffer[1024] = "hello world!";
+    char buffer[1024] = {0};
     char receive_buffer[1024] = { 0 };  // 初始化数组，避免随机值;
     int count = 0;
     while (true) {
+        count++;
+        snprintf(buffer, sizeof(buffer), "%d", count);  // 格式化为字符串，自动加\0结束符
         Packet* packet = (Packet*)malloc(sizeof(PacketHeader) + 10);
         // 定义包头信息
         packet->header.magic = 0x55AA77CC;
@@ -60,7 +62,7 @@ int main()
             return 0;
         }
         std::cout << "client send data: " << buffer << std::endl;
-        std::cout << "客户端发送数据成功，发送长度：" << send_len << std::endl;
+        //std::cout << "客户端发送数据成功，发送长度：" << send_len << std::endl;
         free(packet);
         //// 等待接收数据
         //int receive_len = recv(client_socket, receive_buffer, sizeof(receive_buffer) - 1, 0);  // 预留1个位置给 '\0'
