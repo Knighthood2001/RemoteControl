@@ -15,6 +15,8 @@ struct Packet {
     char body[]; // 包数据
 };
 int GetPacketLen(Packet* pck);
+Packet* PackPacket(int cmd, char* buffer, int buffer_len);
+
 int main()
 {
     // 初始化网络环境
@@ -49,13 +51,8 @@ int main()
     while (true) {
         count++;
         snprintf(buffer, sizeof(buffer), "%d", count);  // 格式化为字符串，自动加\0结束符
-        Packet* packet = (Packet*)malloc(sizeof(PacketHeader) + 10);
-        // 定义包头信息
-        packet->header.magic = 0x55AA77CC;
-        packet->header.cmd = 2000;
-        packet->header.body_len = 10;
-        // 将数据拷贝到要发送的packet中
-        memcpy(packet->body, buffer, 10);
+
+        Packet* packet = PackPacket(2000, buffer, 10);
         int send_len = send(client_socket, (char*) & packet->header.magic, GetPacketLen(packet), 0);  // +1 携带字符串结束符 '\0'
         if (send_len == SOCKET_ERROR) { 
             std::cout << "发送数据失败" << std::endl;
@@ -83,4 +80,14 @@ int GetPacketLen(Packet* pck) {
     if (pck != nullptr) {
         return pck->header.body_len + sizeof(PacketHeader);
     }
+}
+Packet* PackPacket(int cmd, char* buffer, int buffer_len) {
+    Packet* pck = (Packet*)malloc(sizeof(PacketHeader) + buffer_len);
+    pck->header.magic = 0x55AA77CC;
+    pck->header.cmd = cmd;
+    pck->header.body_len = buffer_len;
+    if (buffer_len > 0 && buffer != nullptr) {
+        memcpy(pck->body, buffer, buffer_len);
+    }
+    return pck;
 }
