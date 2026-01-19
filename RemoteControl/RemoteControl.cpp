@@ -17,7 +17,7 @@ struct Packet {
 };
 Packet* ParsePacket(char* buffer, int len);
 int GetPacketLen(Packet* pck);
-
+Packet* PackPacket(int cmd, char* buffer, int buffer_len);
 int main()
 {
     // 初始化网络环境
@@ -62,20 +62,23 @@ int main()
         int recv_len = recv(client_socket, buffer+index, RECV_BUFFER_SIZE-index, 0); //缓冲区总大小为RECV_BUFFER_SIZE，已经使用了index个字节（前index个位置已存放上一次接收的有效数据），剩余可用空间为RECV_BUFFER_SIZE - index
         index += recv_len;
         if (recv_len == SOCKET_ERROR) {
-            std::cout << "客户端接收数据失败" << std::endl;
+            std::cout << "服务端接收数据失败" << std::endl;
         }
         else if (recv_len > 0) {
             Packet* packet = ParsePacket(buffer, index);
             index = index - GetPacketLen(packet);
             memmove(buffer, buffer + GetPacketLen(packet), index);//把已经读取的数据删了
-            std::cout << "server recv data: " << packet->body << std::endl;
+            printf("server recv packet->body:%s\r\n", packet->body);
+            printf("server recv packet->header.magic:%x\r\n", packet->header.magic);
+            printf("server recv packet->header.cmd:%d\r\n", packet->header.cmd);
+            printf("server recv packet->header.body_len:%d\r\n", packet->header.body_len);
+            // 发送数据给客户端
+            Packet* pck = PackPacket(packet->header.cmd, packet->body, packet->header.body_len);
             free(packet);
-            //// 发送数据给客户端
-            //int send_len = send(client_socket, buffer, strlen(buffer) + 1, 0);
-            //if (send_len == SOCKET_ERROR) {
-            //    std::cout << "服务端回发数据失败" << std::endl;
-            //}
-            //std::cout << "send recv data: " << buffer << std::endl;
+            send(client_socket, (char*)&pck->header.magic, GetPacketLen(pck), 0);
+            printf("server send packet->body:%s\r\n", pck->body);
+
+
         }
         Sleep(200);
     }
@@ -118,4 +121,15 @@ int GetPacketLen(Packet* pck) {
     if (pck != nullptr) {
         return pck->header.body_len + sizeof(PacketHeader);
     }
+    return 0; // 补充空指针返回值
+}
+Packet* PackPacket(int cmd, char* buffer, int buffer_len) {
+    Packet* pck = (Packet*)malloc(sizeof(PacketHeader) + buffer_len);
+    pck->header.magic = 0x55AA77CC;
+    pck->header.cmd = cmd;
+    pck->header.body_len = buffer_len;
+    if (buffer_len > 0 && buffer != nullptr) {
+        memcpy(pck->body, buffer, buffer_len);
+    }
+    return pck;
 }
