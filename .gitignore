@@ -1,5 +1,3 @@
 .vs
 x64
 debug.log
-PacketUtils.cpp
-PacketUtils.h
