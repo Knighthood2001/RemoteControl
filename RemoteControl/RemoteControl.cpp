@@ -149,24 +149,25 @@ Packet* PackPacket(int cmd, char* buffer, int buffer_len) {
 }
 
 int HandleCommand(Packet* packet) {
+    int ret = 0;
     switch (packet->header.cmd)
     {
     case CMD_SCREEN:
-        HandleScreen(packet);
+        ret = HandleScreen(packet);
         break;
     case CMD_MOUSE:
-        HandleMouse(packet);
+        ret = HandleMouse(packet);
         break;
     case CMD_KEYBOARD:
-        HandleKeyBoard(packet);
+        ret = HandleKeyBoard(packet);
         break;
     case CMD_TEST:
-        HandleTest(packet);
+        ret = HandleTest(packet);
         break;
     default:
         break;
     }
-    return 0;
+    return ret;
 }
 int HandleScreen(Packet* packet) {
 
