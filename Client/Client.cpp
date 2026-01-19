@@ -1,23 +1,10 @@
 ﻿#include <iostream>
 #include <Windows.h>
 #include <cstring>  // 用于 strlen 函数
-
+#include "PacketUtils.h"
 #pragma comment(lib, "ws2_32.lib")
 #define RECV_BUFFER_LEN 1024*1024*1
-#pragma pack(push, 1) // 将这个结构体按照一字节对齐
-struct PacketHeader {
-    int magic; // 4字节包头
-    int cmd; // 4字节命令
-    int body_len; // 数据长度
-};
-#pragma pack(pop)
-struct Packet {
-    PacketHeader header; // 包头
-    char body[]; // 包数据
-};
-int GetPacketLen(Packet* pck);
-Packet* PackPacket(int cmd, char* buffer, int buffer_len);
-Packet* ParsePacket(char* buffer, int len);
+
 int main()
 {
     // 初始化网络环境
@@ -36,7 +23,7 @@ int main()
     SOCKADDR_IN server_addr;
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = ntohs(9999);
-    server_addr.sin_addr.S_un.S_addr = inet_addr("192.168.85.80");
+    server_addr.sin_addr.S_un.S_addr = inet_addr("192.168.2.6");
 
     // 连接服务器
     if (connect(client_socket, (sockaddr*)&server_addr, sizeof(SOCKADDR_IN)) == SOCKET_ERROR) {
@@ -86,47 +73,4 @@ int main()
     closesocket(client_socket);
     WSACleanup();
     return 0;
-}
-int GetPacketLen(Packet* pck) {
-    if (pck != nullptr) {
-        return pck->header.body_len + sizeof(PacketHeader);
-    }
-    return 0; // 补充空指针返回值
-}
-Packet* PackPacket(int cmd, char* buffer, int buffer_len) {
-    Packet* pck = (Packet*)malloc(sizeof(PacketHeader) + buffer_len);
-    pck->header.magic = 0x55AA77CC;
-    pck->header.cmd = cmd;
-    pck->header.body_len = buffer_len;
-    if (buffer_len > 0 && buffer != nullptr) {
-        memcpy(pck->body, buffer, buffer_len);
-    }
-    return pck;
-}
-Packet* ParsePacket(char* buffer, int len) {
-    // magic cmd body_len data
-    Packet pck;
-    Packet* ppck;
-    int index = 0;
-    // 找包头，4字节
-    for (; index < len; index++) {
-        if (*(int*)(buffer + index) == 0x55AA77CC) {
-            pck.header.magic = *(int*)(buffer + index);
-            index += 4;
-            break;
-        }
-    }
-    // 命令
-    pck.header.cmd = *(int*)(buffer + index); index += 4;
-    pck.header.body_len = *(int*)(buffer + index); index += 4;
-    // 获取数据
-    if (pck.header.body_len > 0) {
-        // 创建接收缓存区
-        ppck = (Packet*)malloc(sizeof(PacketHeader) + pck.header.body_len);
-        // 拷贝用户数据
-        memcpy(ppck->body, buffer + index, pck.header.body_len);
-        // 拷贝包头
-        memcpy(&ppck->header, &pck.header, sizeof(PacketHeader));
-        return ppck;
-    }
 }
