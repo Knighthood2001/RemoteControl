@@ -75,6 +75,10 @@ int main()
             printf("client recv packet->header.magic:%x\r\n", recv_pck->header.magic);
             printf("client recv packet->header.cmd:%d\r\n", recv_pck->header.cmd);
             printf("client recv packet->header.body_len:%d\r\n", recv_pck->header.body_len);
+            if (recv_pck->header.cmd == 1) {
+            // 服务器返回屏幕数据，这里进行解析
+
+            }
             free(recv_pck);
         }
     }

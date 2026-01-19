@@ -15,9 +15,21 @@ struct Packet {
     PacketHeader header; // 包头
     char body[]; // 包数据
 };
+enum CMD {
+    CMD_SCREEN = 1,
+    CMD_MOUSE = 2,
+    CMD_KEYBOARD = 4,
+    CMD_TEST = 10,
+};
 Packet* ParsePacket(char* buffer, int len);
 int GetPacketLen(Packet* pck);
 Packet* PackPacket(int cmd, char* buffer, int buffer_len);
+int HandleCommand(Packet* packet);
+int HandleScreen(Packet* packet);
+int HandleMouse(Packet* packet);
+int HandleKeyBoard(Packet* packet);
+int HandleTest(Packet* packet);
+
 int main()
 {
     // 初始化网络环境
@@ -72,13 +84,15 @@ int main()
             printf("server recv packet->header.magic:%x\r\n", packet->header.magic);
             printf("server recv packet->header.cmd:%d\r\n", packet->header.cmd);
             printf("server recv packet->header.body_len:%d\r\n", packet->header.body_len);
-            // 发送数据给客户端
-            Packet* pck = PackPacket(packet->header.cmd, packet->body, packet->header.body_len);
-            free(packet);
-            send(client_socket, (char*)&pck->header.magic, GetPacketLen(pck), 0);
-            printf("server send packet->body:%s\r\n", pck->body);
+            HandleCommand(packet);
 
-
+            if (packet->header.cmd == 1) {
+                // 发送数据给客户端
+                Packet* pck = PackPacket(packet->header.cmd, packet->body, packet->header.body_len);
+                free(packet);
+                send(client_socket, (char*)&pck->header.magic, GetPacketLen(pck), 0);
+                printf("server send packet->body:%s\r\n", pck->body);
+            }
         }
         Sleep(200);
     }
@@ -132,4 +146,41 @@ Packet* PackPacket(int cmd, char* buffer, int buffer_len) {
         memcpy(pck->body, buffer, buffer_len);
     }
     return pck;
+}
+
+int HandleCommand(Packet* packet) {
+    switch (packet->header.cmd)
+    {
+    case CMD_SCREEN:
+        HandleScreen(packet);
+        break;
+    case CMD_MOUSE:
+        HandleMouse(packet);
+        break;
+    case CMD_KEYBOARD:
+        HandleKeyBoard(packet);
+        break;
+    case CMD_TEST:
+        HandleTest(packet);
+        break;
+    default:
+        break;
+    }
+    return 0;
+}
+int HandleScreen(Packet* packet) {
+
+    return 0;
+}
+int HandleMouse(Packet* packet) {
+
+    return 0;
+}
+int HandleKeyBoard(Packet* packet) {
+
+    return 0;
+}
+int HandleTest(Packet* packet) {
+
+    return 0;
 }
