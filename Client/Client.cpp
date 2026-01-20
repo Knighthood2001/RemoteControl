@@ -23,7 +23,7 @@ int main()
     SOCKADDR_IN server_addr;
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = ntohs(9999);
-    server_addr.sin_addr.S_un.S_addr = inet_addr("192.168.2.6");
+    server_addr.sin_addr.S_un.S_addr = inet_addr("192.168.0.80");
 
     // 连接服务器
     if (connect(client_socket, (sockaddr*)&server_addr, sizeof(SOCKADDR_IN)) == SOCKET_ERROR) {
@@ -42,7 +42,7 @@ int main()
         std::cout << "请输入要发送的数据：";
         fgets(buffer, 1024, stdin);
 
-        Packet* packet = PackPacket(2000, buffer, 10);
+        Packet* packet = PackPacket(1, buffer, 10);
         int send_len = send(client_socket, (char*) & packet->header.magic, GetPacketLen(packet), 0); 
         if (send_len == SOCKET_ERROR) { 
             std::cout << "发送数据失败" << std::endl;

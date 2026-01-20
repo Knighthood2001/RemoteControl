@@ -1,6 +1,7 @@
 ﻿#include <iostream>
 #include <Windows.h>
 #include <cstring>  // 用于 strlen 函数
+#include <atlimage.h>
 #include "PacketUtils.h"
 #pragma comment(lib, "ws2_32.lib")
 #define RECV_BUFFER_SIZE 1024*1024*1
@@ -115,7 +116,23 @@ int HandleCommand(Packet* packet) {
     return ret;
 }
 int HandleScreen(Packet* packet) {
-
+    CImage image;
+    SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+    // 1. 获取主显示器的分辨率（像素宽、像素高）
+    int screenWidth = GetSystemMetrics(SM_CXSCREEN);    // SM_CXSCREEN：获取主屏幕的水平分辨率（宽度）
+    int screenHeight = GetSystemMetrics(SM_CYSCREEN);   // SM_CYSCREEN：获取主屏幕的垂直分辨率（高度）
+    std::cout << "width: " << screenWidth << ", height: " << screenHeight << std::endl;
+    // 2. 获取主显示器的色深（每像素位数，如32位真彩色）
+    // 获取桌面设备上下文（DC），对应主显示器
+    HDC hDesktopDC = GetDC(NULL);
+    // 获取每像素的颜色位数
+    int colorDepth = GetDeviceCaps(hDesktopDC, BITSPIXEL);
+    image.Create(screenWidth, screenHeight, colorDepth);
+    BitBlt(image.GetDC(), 0, 0, screenWidth, screenHeight, hDesktopDC, 0, 0, SRCCOPY);
+    // 释放设备上下文，避免资源泄漏
+    ReleaseDC(NULL, hDesktopDC);
+    image.Save(L"test.png", ::Gdiplus::ImageFormatPNG);  //如果确定项目一直用 Unicode 字符集，可以直接用 L 前缀声明宽字符
+    image.ReleaseDC();
     return 0;
 }
 int HandleMouse(Packet* packet) {
