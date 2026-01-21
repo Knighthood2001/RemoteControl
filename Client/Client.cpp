@@ -4,34 +4,14 @@
 #include "PacketUtils.h"
 #pragma comment(lib, "ws2_32.lib")
 #define RECV_BUFFER_LEN 1024*1024*1
+SOCKET InitClientSocket(const char* serverIp, u_short serverPort);
 
-int main()
-{
-    // 初始化网络环境
-    WSADATA wsadata;
-    int wsa_ret = WSAStartup(MAKEWORD(2, 2), &wsadata);
-    if (wsa_ret != 0) {
-        std::cout << "初始化Winsock失败，错误码：" << wsa_ret << std::endl;
-        return 0;
-    }
-    // 创建socket
-    SOCKET client_socket = socket(AF_INET, SOCK_STREAM, 0);
+int main(){
+    SOCKET client_socket = InitClientSocket("192.168.0.80", 9999);
     if (client_socket == INVALID_SOCKET) {
-        std::cout << "创建客户端socket失败\n" << std::endl;
-        return 0;
+        std::cout << "客户端初始化失败，程序退出" << std::endl;
+        return 1; // 初始化失败，非0退出码更规范
     }
-    SOCKADDR_IN server_addr;
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = ntohs(9999);
-    server_addr.sin_addr.S_un.S_addr = inet_addr("192.168.0.80");
-
-    // 连接服务器
-    if (connect(client_socket, (sockaddr*)&server_addr, sizeof(SOCKADDR_IN)) == SOCKET_ERROR) {
-        std::cout << "连接服务器失败\n" << std::endl;
-        return 0;
-    }
-    std::cout << "连接服务器成功\n" << std::endl;
-
     //////////////////////////////////////////////////////////////////////////////////////
     char buffer[1024] = {0};
     char* recv_buffer = (char*)malloc(RECV_BUFFER_LEN);  
@@ -73,4 +53,37 @@ int main()
     closesocket(client_socket);
     WSACleanup();
     return 0;
+}
+// 封装客户端初始化和连接服务器的函数
+// 参数：serverIp - 服务器IP地址，serverPort - 服务器端口
+// 返回值：成功返回客户端socket句柄，失败返回INVALID_SOCKET
+SOCKET InitClientSocket(const char* serverIp, u_short serverPort) {
+    // 初始化网络环境
+    WSADATA wsadata;
+    int wsa_ret = WSAStartup(MAKEWORD(2, 2), &wsadata);
+    if (wsa_ret != 0) {
+        std::cout << "初始化Winsock失败，错误码：" << wsa_ret << std::endl;
+        return INVALID_SOCKET;
+    }
+    // 创建socket
+    SOCKET client_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (client_socket == INVALID_SOCKET) {
+        std::cout << "创建客户端socket失败\n" << std::endl;
+        WSACleanup(); // 失败时清理WSA资源
+        return INVALID_SOCKET;
+    }
+    SOCKADDR_IN server_addr = {0};
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = ntohs(serverPort);
+    server_addr.sin_addr.S_un.S_addr = inet_addr(serverIp);
+
+    // 连接服务器
+    if (connect(client_socket, (sockaddr*)&server_addr, sizeof(SOCKADDR_IN)) == SOCKET_ERROR) {
+        std::cout << "连接服务器失败\n" << std::endl;
+        closesocket(client_socket); // 失败时关闭socket
+        WSACleanup(); // 清理WSA资源
+        return INVALID_SOCKET;
+    }
+    std::cout << "连接服务器成功\n" << std::endl;
+    return client_socket;
 }
