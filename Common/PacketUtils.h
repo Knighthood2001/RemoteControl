@@ -17,6 +17,13 @@ struct Packet {
     char body[]; // 包数据
 };
 
+enum CMD {
+    CMD_SCREEN = 1,
+    CMD_MOUSE = 2,
+    CMD_KEYBOARD = 4,
+    CMD_TEST = 10,
+};
+
 // 获取数据包长度
 int GetPacketLen(Packet* pck);
 

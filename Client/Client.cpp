@@ -5,6 +5,7 @@
 #pragma comment(lib, "ws2_32.lib")
 #define RECV_BUFFER_LEN 1024*1024*1
 SOCKET InitClientSocket(const char* serverIp, u_short serverPort);
+int InitWindow(HINSTANCE hInstance, int nCmdShow);
 LRESULT CALLBACK winProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg)
     {
@@ -21,41 +22,14 @@ int WINAPI WinMain(
     PSTR pCmdLine,  // 命令行参数
     int nCmdShow  // 窗口显示方式
 ) {
-    // 1 注册一个窗口类
-    WNDCLASS ws = {};
-    LPCSTR CLASS_NAME = "MainWindow";
-    ws.lpfnWndProc = winProc;
-    ws.hInstance - hInstance;
-    ws.lpszClassName = CLASS_NAME;
-    ws.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    ws.hCursor = LoadCursor(NULL, IDC_ARROW);
-    ws.hIcon = LoadIconA(NULL, IDI_APPLICATION);
-    ws.style = CS_HREDRAW | CS_VREDRAW;
-    if (!RegisterClass(&ws)) {
-        MessageBox(NULL, "窗口注册失败", "错误",  MB_OK | MB_ICONERROR);
-        return 0;
+    // 初始化窗口
+    InitWindow(hInstance, nCmdShow);
+    // 连接服务器
+    SOCKET client_socket = InitClientSocket("192.168.0.80", 9999);
+    if (client_socket == INVALID_SOCKET) {
+        std::cout << "客户端初始化失败，程序退出" << std::endl;
+        return 1; // 初始化失败，非0退出码更规范
     }
-    // 2 创建窗口
-    //CreateWindowA(lpClassName, lpWindowName, dwStyle, x, y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam)
-    HWND hwnd = CreateWindow(
-        CLASS_NAME,
-        "远程控制",
-        WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, CW_USEDEFAULT,
-        600,400,
-        NULL,
-        NULL,
-        hInstance,
-        NULL
-    );
-    if (hwnd == NULL) {
-        MessageBox(NULL, "窗口创建失败", "错误", MB_OK | MB_ICONERROR);
-        return 0;
-    }
-    // 3显示窗口
-    ShowWindow(hwnd,nCmdShow);
-    // 4 更新窗口
-    UpdateWindow(hwnd);
     // 创建消息循环队列
     MSG msg;
     while (GetMessage(&msg, NULL, 0, 0)) {
@@ -151,4 +125,42 @@ SOCKET InitClientSocket(const char* serverIp, u_short serverPort) {
     }
     std::cout << "连接服务器成功\n" << std::endl;
     return client_socket;
+}
+// 创建窗口
+int InitWindow(HINSTANCE hInstance, int nCmdShow) {
+    // 1 注册一个窗口类
+    WNDCLASS ws = { 0 };
+    LPCSTR CLASS_NAME = "MainWindow";
+    ws.lpfnWndProc = winProc;
+    ws.hInstance = hInstance;
+    ws.lpszClassName = CLASS_NAME;
+    ws.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    ws.hCursor = LoadCursor(NULL, IDC_ARROW);
+    ws.hIcon = LoadIconA(NULL, IDI_APPLICATION);
+    ws.style = CS_HREDRAW | CS_VREDRAW;
+    if (!RegisterClass(&ws)) {
+        MessageBox(NULL, "窗口注册失败", "错误", MB_OK | MB_ICONERROR);
+        return 0;
+    }
+    // 2 创建窗口
+    //CreateWindowA(lpClassName, lpWindowName, dwStyle, x, y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam)
+    HWND hwnd = CreateWindow(
+        CLASS_NAME,
+        "远程控制",
+        WS_OVERLAPPEDWINDOW,
+        CW_USEDEFAULT, CW_USEDEFAULT,
+        600, 400,
+        NULL,
+        NULL,
+        hInstance,
+        NULL
+    );
+    if (hwnd == NULL) {
+        MessageBox(NULL, "窗口创建失败", "错误", MB_OK | MB_ICONERROR);
+        return 0;
+    }
+    // 3显示窗口
+    ShowWindow(hwnd, nCmdShow);
+    // 4 更新窗口
+    UpdateWindow(hwnd);
 }
