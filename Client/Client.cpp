@@ -5,55 +5,120 @@
 #pragma comment(lib, "ws2_32.lib")
 #define RECV_BUFFER_LEN 1024*1024*1
 SOCKET InitClientSocket(const char* serverIp, u_short serverPort);
-
-int main(){
-    SOCKET client_socket = InitClientSocket("192.168.0.80", 9999);
-    if (client_socket == INVALID_SOCKET) {
-        std::cout << "客户端初始化失败，程序退出" << std::endl;
-        return 1; // 初始化失败，非0退出码更规范
+LRESULT CALLBACK winProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+    switch (msg)
+    {
+    default:
+        return DefWindowProc(hwnd, msg, wParam, lParam);
+        break;
     }
-    //////////////////////////////////////////////////////////////////////////////////////
-    char buffer[1024] = {0};
-    char* recv_buffer = (char*)malloc(RECV_BUFFER_LEN);  
-    int count = 0;
-    while (true) {
-        count++;
-        //snprintf(buffer, sizeof(buffer), "%d", count);  
-        std::cout << "请输入要发送的数据：";
-        fgets(buffer, 1024, stdin);
-
-        Packet* packet = PackPacket(1, buffer, 10);
-        int send_len = send(client_socket, (char*) & packet->header.magic, GetPacketLen(packet), 0); 
-        if (send_len == SOCKET_ERROR) { 
-            std::cout << "发送数据失败" << std::endl;
-            return 0;
-        }
-        printf("client send data: %s\r\n", buffer);
-        //std::cout << "客户端发送数据成功，发送长度：" << send_len << std::endl;
-        free(packet);
-        // 等待接收数据
-        int recv_len = recv(client_socket, recv_buffer, RECV_BUFFER_LEN, 0); 
-        if (recv_len == SOCKET_ERROR) {
-            std::cout << "接收数据失败，错误码：" << WSAGetLastError() << std::endl;
-        }
-        else if (recv_len > 0) {
-            Packet* recv_pck = ParsePacket(recv_buffer, recv_len);
-            printf("client recv packet->body:%s\r\n", recv_pck->body);
-            printf("client recv packet->header.magic:%x\r\n", recv_pck->header.magic);
-            printf("client recv packet->header.cmd:%d\r\n", recv_pck->header.cmd);
-            printf("client recv packet->header.body_len:%d\r\n", recv_pck->header.body_len);
-            if (recv_pck->header.cmd == 1) {
-            // 服务器返回屏幕数据，这里进行解析
-
-            }
-            free(recv_pck);
-        }
-    }
-    // 关闭客户端socket，避免资源泄漏
-    closesocket(client_socket);
-    WSACleanup();
     return 0;
 }
+// 创建窗口的主程序
+int WINAPI WinMain(
+    HINSTANCE hInstance,  // 当前实例句柄
+    HINSTANCE hPreventInstance, // 前一个实例句柄
+    PSTR pCmdLine,  // 命令行参数
+    int nCmdShow  // 窗口显示方式
+) {
+    // 1 注册一个窗口类
+    WNDCLASS ws = {};
+    LPCSTR CLASS_NAME = "MainWindow";
+    ws.lpfnWndProc = winProc;
+    ws.hInstance - hInstance;
+    ws.lpszClassName = CLASS_NAME;
+    ws.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    ws.hCursor = LoadCursor(NULL, IDC_ARROW);
+    ws.hIcon = LoadIconA(NULL, IDI_APPLICATION);
+    ws.style = CS_HREDRAW | CS_VREDRAW;
+    if (!RegisterClass(&ws)) {
+        MessageBox(NULL, "窗口注册失败", "错误",  MB_OK | MB_ICONERROR);
+        return 0;
+    }
+    // 2 创建窗口
+    //CreateWindowA(lpClassName, lpWindowName, dwStyle, x, y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam)
+    HWND hwnd = CreateWindow(
+        CLASS_NAME,
+        "远程控制",
+        WS_OVERLAPPEDWINDOW,
+        CW_USEDEFAULT, CW_USEDEFAULT,
+        600,400,
+        NULL,
+        NULL,
+        hInstance,
+        NULL
+    );
+    if (hwnd == NULL) {
+        MessageBox(NULL, "窗口创建失败", "错误", MB_OK | MB_ICONERROR);
+        return 0;
+    }
+    // 3显示窗口
+    ShowWindow(hwnd,nCmdShow);
+    // 4 更新窗口
+    UpdateWindow(hwnd);
+    // 创建消息循环队列
+    MSG msg;
+    while (GetMessage(&msg, NULL, 0, 0)) {
+        // 翻译消息
+        TranslateMessage(&msg);
+        // 分发消息
+        DispatchMessage(&msg);
+
+    }
+
+}
+
+
+//int main(){
+//    SOCKET client_socket = InitClientSocket("192.168.0.80", 9999);
+//    if (client_socket == INVALID_SOCKET) {
+//        std::cout << "客户端初始化失败，程序退出" << std::endl;
+//        return 1; // 初始化失败，非0退出码更规范
+//    }
+//    //////////////////////////////////////////////////////////////////////////////////////
+//    char buffer[1024] = {0};
+//    char* recv_buffer = (char*)malloc(RECV_BUFFER_LEN);  
+//    int count = 0;
+//    while (true) {
+//        count++;
+//        //snprintf(buffer, sizeof(buffer), "%d", count);  
+//        std::cout << "请输入要发送的数据：";
+//        fgets(buffer, 1024, stdin);
+//
+//        Packet* packet = PackPacket(1, buffer, 10);
+//        int send_len = send(client_socket, (char*) & packet->header.magic, GetPacketLen(packet), 0); 
+//        if (send_len == SOCKET_ERROR) { 
+//            std::cout << "发送数据失败" << std::endl;
+//            return 0;
+//        }
+//        printf("client send data: %s\r\n", buffer);
+//        //std::cout << "客户端发送数据成功，发送长度：" << send_len << std::endl;
+//        free(packet);
+//        // 等待接收数据
+//        int recv_len = recv(client_socket, recv_buffer, RECV_BUFFER_LEN, 0); 
+//        if (recv_len == SOCKET_ERROR) {
+//            std::cout << "接收数据失败，错误码：" << WSAGetLastError() << std::endl;
+//        }
+//        else if (recv_len > 0) {
+//            Packet* recv_pck = ParsePacket(recv_buffer, recv_len);
+//            printf("client recv packet->body:%s\r\n", recv_pck->body);
+//            printf("client recv packet->header.magic:%x\r\n", recv_pck->header.magic);
+//            printf("client recv packet->header.cmd:%d\r\n", recv_pck->header.cmd);
+//            printf("client recv packet->header.body_len:%d\r\n", recv_pck->header.body_len);
+//            if (recv_pck->header.cmd == 1) {
+//            // 服务器返回屏幕数据，这里进行解析
+//
+//            }
+//            free(recv_pck);
+//        }
+//    }
+//    // 关闭客户端socket，避免资源泄漏
+//    closesocket(client_socket);
+//    WSACleanup();
+//    return 0;
+//}
+//
+
 // 封装客户端初始化和连接服务器的函数
 // 参数：serverIp - 服务器IP地址，serverPort - 服务器端口
 // 返回值：成功返回客户端socket句柄，失败返回INVALID_SOCKET
