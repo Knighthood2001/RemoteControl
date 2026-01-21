@@ -5,7 +5,7 @@
 #include "PacketUtils.h"
 #pragma comment(lib, "ws2_32.lib")
 #define RECV_BUFFER_SIZE 1024*1024*1
-
+SOCKET client_socket;
 enum CMD {
     CMD_SCREEN = 1,
     CMD_MOUSE = 2,
@@ -53,7 +53,7 @@ int main()
     SOCKADDR_IN client_addr;
     int client_addr_len = sizeof(SOCKADDR_IN);
     std::cout << "等待客户端连接\n" << std::endl;
-    SOCKET client_socket = accept(server_socket, (sockaddr*)&client_addr, &client_addr_len);
+    client_socket = accept(server_socket, (sockaddr*)&client_addr, &client_addr_len);
     // 等待客户端发送数据
     char* buffer = (char*)malloc(RECV_BUFFER_SIZE);
     // 记录缓冲区当前数据的长度
@@ -131,7 +131,32 @@ int HandleScreen(Packet* packet) {
     BitBlt(image.GetDC(), 0, 0, screenWidth, screenHeight, hDesktopDC, 0, 0, SRCCOPY);
     // 释放设备上下文，避免资源泄漏
     ReleaseDC(NULL, hDesktopDC);
-    image.Save(L"test.png", ::Gdiplus::ImageFormatPNG);  //如果确定项目一直用 Unicode 字符集，可以直接用 L 前缀声明宽字符
+    //image.Save(L"test.png", ::Gdiplus::ImageFormatPNG);  //如果确定项目一直用 Unicode 字符集，可以直接用 L 前缀声明宽字符
+    //image.ReleaseDC();
+    HGLOBAL hMen = GlobalAlloc(GMEM_MOVEABLE, 0);
+    if (hMen == NULL) {
+        return -1; // 分配失败
+    }
+    // 创建一个内存流
+    IStream* pStream = NULL;
+    HRESULT ret = CreateStreamOnHGlobal(hMen, true, &pStream);
+    if (ret == S_OK) {
+        image.Save(pStream, ::Gdiplus::ImageFormatPNG);// 将文件保存到内存流中
+        // 将流指针放到开头
+        LARGE_INTEGER lg = {0}; 
+        pStream->Seek(lg, STREAM_SEEK_SET, NULL);
+        // 获取这个流指针
+        char* pdata = (char*)GlobalLock(hMen);
+        int len = GlobalSize(hMen);// 获取流长度
+        // 发送数据
+        Packet* packet = PackPacket(CMD_SCREEN, pdata, len);
+        send(client_socket, (char*)&packet->header.magic,sizeof(PacketHeader)+len, 0);
+        free(packet);
+        //解锁内存
+        GlobalUnlock(hMen);
+    }
+    pStream->Release();
+    GlobalFree(hMen);
     image.ReleaseDC();
     return 0;
 }
