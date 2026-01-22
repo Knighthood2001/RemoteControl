@@ -4,12 +4,13 @@
 #include <atlimage.h> 
 #include "PacketUtils.h"
 #pragma comment(lib, "ws2_32.lib")
-#define RECV_BUFFER_LEN 1024*1024*1
+#define RECV_BUFFER_LEN 1024*1024*10
 // 定义两个全局变量
 SOCKET client_socket;
 SOCKADDR_IN server_addr;
 HWND g_hwnd = NULL;
 CImage g_image;
+CRITICAL_SECTION g_cri_sec; // 加锁
 
 SOCKET InitClientSocket(const char* serverIp, u_short serverPort);
 int InitWindow(HINSTANCE hInstance, int nCmdShow);
@@ -29,14 +30,16 @@ LRESULT CALLBACK winProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             GetClientRect(hwnd, &client_rect);
             int client_width = client_rect.right - client_rect.left;
             int client_height = client_rect.bottom - client_rect.top;
-            // 远程图片的宽高
-            int remote_width = g_image.GetWidth();
-            int remote_height = g_image.GetHeight();
+
             // 设置拉伸模式
             int oldmode = SetStretchBltMode(hdc, HALFTONE);
             SetBrushOrgEx(hdc, 0, 0, NULL);
+            EnterCriticalSection(&g_cri_sec);
+            // 远程图片的宽高
+            int remote_width = g_image.GetWidth();
+            int remote_height = g_image.GetHeight();
             g_image.StretchBlt(hdc, 0, 0, client_width, client_height, 0, 0, remote_width, remote_height, SRCCOPY);
-
+            LeaveCriticalSection(&g_cri_sec);
         }
         EndPaint(hwnd, &ps);
     }
@@ -53,6 +56,7 @@ int WINAPI WinMain(
     PSTR pCmdLine,  // 命令行参数
     int nCmdShow  // 窗口显示方式
 ){
+    InitializeCriticalSection(&g_cri_sec);
     // 初始化窗口
     InitWindow(hInstance, nCmdShow);
     // 连接服务器
@@ -76,7 +80,8 @@ int WINAPI WinMain(
         DispatchMessage(&msg);
 
     }
-
+    // 程序退出时释放临界区
+    DeleteCriticalSection(&g_cri_sec);
 }
 
 
@@ -225,9 +230,16 @@ DWORD WINAPI SendScreenCallBack(LPVOID lpThreadParameter) {
                     // 将指针移到末尾
                     LARGE_INTEGER lg = { 0 };
                     pStream->Seek(lg, STREAM_SEEK_SET, NULL);
-                    // 数据移动到缓存中
-                    
+                    EnterCriticalSection(&g_cri_sec);
+                    if (!g_image.IsNull()) {
+                        g_image.Destroy();
+                    }
+                    // 数据移动到缓存中                    
                     g_image.Load(pStream);
+                    //if (SUCCEEDED(g_image.Load(pStream))) {
+                    //    InvalidateRect(g_hwnd, NULL, FALSE);
+                    //}
+                    LeaveCriticalSection(&g_cri_sec);
                     // 通知UI线程重绘
                     InvalidateRect(g_hwnd, NULL, FALSE);
                     UpdateWindow(g_hwnd);
