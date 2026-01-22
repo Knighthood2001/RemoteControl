@@ -1,11 +1,20 @@
 ﻿#include <iostream>
 #include <Windows.h>
 #include <cstring>  // 用于 strlen 函数
+#include <atlimage.h> 
 #include "PacketUtils.h"
 #pragma comment(lib, "ws2_32.lib")
 #define RECV_BUFFER_LEN 1024*1024*1
+// 定义两个全局变量
+SOCKET client_socket;
+SOCKADDR_IN server_addr;
+HWND g_hwnd = NULL;
+CImage g_image;
+
 SOCKET InitClientSocket(const char* serverIp, u_short serverPort);
 int InitWindow(HINSTANCE hInstance, int nCmdShow);
+DWORD WINAPI SendScreenCallBack(LPVOID lpThreadParameter);
+
 LRESULT CALLBACK winProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg)
     {
@@ -21,15 +30,21 @@ int WINAPI WinMain(
     HINSTANCE hPreventInstance, // 前一个实例句柄
     PSTR pCmdLine,  // 命令行参数
     int nCmdShow  // 窗口显示方式
-) {
+){
     // 初始化窗口
     InitWindow(hInstance, nCmdShow);
     // 连接服务器
     SOCKET client_socket = InitClientSocket("192.168.0.80", 9999);
-    if (client_socket == INVALID_SOCKET) {
-        std::cout << "客户端初始化失败，程序退出" << std::endl;
-        return 1; // 初始化失败，非0退出码更规范
+    // 连接服务器
+    if (connect(client_socket, (sockaddr*)&server_addr, sizeof(SOCKADDR_IN)) == SOCKET_ERROR) {
+        std::cout << "连接服务器失败\n" << std::endl;
+        closesocket(client_socket); // 失败时关闭socket
+        WSACleanup(); // 清理WSA资源
     }
+    std::cout << "连接服务器成功\n" << std::endl;
+    // 创建一个线程
+    unsigned long send_screen_thread_id = 0;
+    HANDLE handle_send_screen = CreateThread(NULL,0, SendScreenCallBack, NULL, 0, &send_screen_thread_id);
     // 创建消息循环队列
     MSG msg;
     while (GetMessage(&msg, NULL, 0, 0)) {
@@ -105,25 +120,19 @@ SOCKET InitClientSocket(const char* serverIp, u_short serverPort) {
         return INVALID_SOCKET;
     }
     // 创建socket
-    SOCKET client_socket = socket(AF_INET, SOCK_STREAM, 0);
+    /*SOCKET client_socket = socket(AF_INET, SOCK_STREAM, 0);*/
+    client_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (client_socket == INVALID_SOCKET) {
         std::cout << "创建客户端socket失败\n" << std::endl;
         WSACleanup(); // 失败时清理WSA资源
         return INVALID_SOCKET;
     }
-    SOCKADDR_IN server_addr = {0};
+    /*SOCKADDR_IN server_addr = {0};*/
+    server_addr = {0};
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = ntohs(serverPort);
     server_addr.sin_addr.S_un.S_addr = inet_addr(serverIp);
 
-    // 连接服务器
-    if (connect(client_socket, (sockaddr*)&server_addr, sizeof(SOCKADDR_IN)) == SOCKET_ERROR) {
-        std::cout << "连接服务器失败\n" << std::endl;
-        closesocket(client_socket); // 失败时关闭socket
-        WSACleanup(); // 清理WSA资源
-        return INVALID_SOCKET;
-    }
-    std::cout << "连接服务器成功\n" << std::endl;
     return client_socket;
 }
 // 创建窗口
@@ -144,7 +153,7 @@ int InitWindow(HINSTANCE hInstance, int nCmdShow) {
     }
     // 2 创建窗口
     //CreateWindowA(lpClassName, lpWindowName, dwStyle, x, y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam)
-    HWND hwnd = CreateWindow(
+    g_hwnd = CreateWindow(
         CLASS_NAME,
         "远程控制",
         WS_OVERLAPPEDWINDOW,
@@ -155,12 +164,54 @@ int InitWindow(HINSTANCE hInstance, int nCmdShow) {
         hInstance,
         NULL
     );
-    if (hwnd == NULL) {
+    if (g_hwnd == NULL) {
         MessageBox(NULL, "窗口创建失败", "错误", MB_OK | MB_ICONERROR);
         return 0;
     }
     // 3显示窗口
-    ShowWindow(hwnd, nCmdShow);
+    ShowWindow(g_hwnd, nCmdShow);
     // 4 更新窗口
-    UpdateWindow(hwnd);
+    UpdateWindow(g_hwnd);
+    return 0;
+}
+//DWORD(WINAPI* PTHREAD_START_ROUTINE)(
+//LPVOID lpThreadParameter
+//)
+// 返回值 调用约定 函数名(参数列表){函数体}
+DWORD WINAPI SendScreenCallBack(LPVOID lpThreadParameter) {
+    char* recv_buffer = (char*)malloc(RECV_BUFFER_LEN);
+    while (true) {
+        Packet* pack = PackPacket(CMD_SCREEN, NULL, 0);
+        // 发送获取屏幕数据
+        send(client_socket, (char*)&pack->header.magic, GetPacketLen(pack), 0);
+        free(pack);
+        int len = recv(client_socket, recv_buffer, RECV_BUFFER_LEN, 0);
+        if (len > 0) {
+            Packet* pack = ParsePacket(recv_buffer, len);
+            if (pack != NULL) {
+                // 拿到图片数据，进行 绘制
+                HGLOBAL hMen = GlobalAlloc(GMEM_MOVEABLE, 0);
+                if (hMen == NULL) {
+                    continue;
+                }
+                IStream* pStream = NULL;
+                HRESULT ret = CreateStreamOnHGlobal(hMen, true, &pStream);
+                if (ret == S_OK) {
+                    ULONG lenght = 0;
+                    pStream->Write(pack->body, pack->header.body_len, &lenght);
+                    free(pack);
+                    // 将指针移到末尾
+                    LARGE_INTEGER lg = { 0 };
+                    pStream->Seek(lg, STREAM_SEEK_SET, NULL);
+                    // 数据移动到缓存中
+                    
+                    g_image.Load(pStream);
+                    // 通知UI线程重绘
+                    InvalidateRect(g_hwnd, NULL, FALSE);
+                    UpdateWindow(g_hwnd);
+
+                }
+            }
+        }
+    }
 }

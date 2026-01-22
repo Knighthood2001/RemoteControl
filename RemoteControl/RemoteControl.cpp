@@ -6,12 +6,6 @@
 #pragma comment(lib, "ws2_32.lib")
 #define RECV_BUFFER_SIZE 1024*1024*1
 SOCKET client_socket;
-enum CMD {
-    CMD_SCREEN = 1,
-    CMD_MOUSE = 2,
-    CMD_KEYBOARD = 4,
-    CMD_TEST = 10,
-};
 
 int HandleCommand(Packet* packet);
 int HandleScreen(Packet* packet);
