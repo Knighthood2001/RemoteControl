@@ -18,6 +18,28 @@ DWORD WINAPI SendScreenCallBack(LPVOID lpThreadParameter);
 LRESULT CALLBACK winProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg)
     {
+    case WM_PAINT:
+    {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hwnd, &ps);
+        // 拿到这个image
+        if (!g_image.IsNull()) {
+            //获取的图片，和我显示不是同样大小的，需要进行缩放
+            RECT client_rect;
+            GetClientRect(hwnd, &client_rect);
+            int client_width = client_rect.right - client_rect.left;
+            int client_height = client_rect.bottom - client_rect.top;
+            // 远程图片的宽高
+            int remote_width = g_image.GetWidth();
+            int remote_height = g_image.GetHeight();
+            // 设置拉伸模式
+            int oldmode = SetStretchBltMode(hdc, HALFTONE);
+            SetBrushOrgEx(hdc, 0, 0, NULL);
+            g_image.StretchBlt(hdc, 0, 0, client_width, client_height, 0, 0, remote_width, remote_height, SRCCOPY);
+
+        }
+        EndPaint(hwnd, &ps);
+    }
     default:
         return DefWindowProc(hwnd, msg, wParam, lParam);
         break;
