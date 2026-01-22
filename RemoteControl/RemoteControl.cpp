@@ -60,6 +60,7 @@ int main()
             std::cout << "服务端接收数据失败" << std::endl;
         }
         else if (recv_len > 0) {
+            std::cout << "服务端接收数据成功，开始解析数据" << std::endl;
             Packet* packet = ParsePacket(buffer, index);
             index = index - GetPacketLen(packet);
             memmove(buffer, buffer + GetPacketLen(packet), index);//把已经读取的数据删了
@@ -72,10 +73,10 @@ int main()
             if (packet->header.cmd == 1) {
                 // 发送数据给客户端
                 Packet* pck = PackPacket(packet->header.cmd, packet->body, packet->header.body_len);
-                free(packet);
                 send(client_socket, (char*)&pck->header.magic, GetPacketLen(pck), 0);
                 printf("server send packet->body:%s\r\n", pck->body);
             }
+            free(packet);
         }
         Sleep(200);
     }

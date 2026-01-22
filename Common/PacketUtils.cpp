@@ -34,6 +34,13 @@ Packet* ParsePacket(char* buffer, int len) {
     // 命令
     pck.header.cmd = *(int*)(buffer + index); index += 4;
     pck.header.body_len = *(int*)(buffer + index); index += 4;
+    // 如果body_len==0，说明只有命令，没有数据，此时也需要拷贝包头
+    if (pck.header.body_len == 0) {
+        ppck = (Packet*)malloc(sizeof(PacketHeader));
+        // 拷贝包头
+        memcpy(&ppck->header, &pck.header, sizeof(PacketHeader));
+        return ppck;
+    }
     // 获取数据
     if (pck.header.body_len > 0) {
         // 创建接收缓存区
