@@ -26,16 +26,19 @@ enum CMD {
 };
 
 enum ENUM_MOUSE {
-    MOUSE_MOVE = 1,  // 移动
-    MOUSE_LDOWN =2,  //左键按下
-    MOUSE_LUP = 3,
-    MOUSE_RDOWN = 4,  //右键按下
-    MOUSE_RUP = 5,
-    MOUSE_MDOWN =6,
-    MOUSE_MUP = 7,
-    MOUSE_LDLINK = 8, // 鼠标左键双击
-    MOUSE_RDLINK = 9,  // 右键双击
-    MOUSE_MDLINK = 10,
+    MOUSE_MOVE = 1,      // 鼠标移动
+    MOUSE_LDOWN = 2,     // 左键按下
+    MOUSE_LUP = 3,       // 左键释放
+    MOUSE_RDOWN = 4,     // 右键按下
+    MOUSE_RUP = 5,       // 右键释放
+    MOUSE_MDOWN = 6,     // 中键按下
+    MOUSE_MUP = 7,       // 中键释放
+    MOUSE_LCLICK = 8,    // 左键单击
+    MOUSE_RCLICK = 9,    // 右键单击
+    MOUSE_MCLICK  = 10,  // 中键单击
+    MOUSE_LDCLICK = 11,  // 左键双击
+    MOUSE_RDCLICK = 12,  // 右键双击
+    MOUSE_MDCLICK = 13,  // 中键双击
 };
 
 struct Mouse {

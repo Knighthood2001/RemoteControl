@@ -156,7 +156,82 @@ int HandleScreen(Packet* packet) {
     return 0;
 }
 int HandleMouse(Packet* packet) {
-
+    // 从结构体中提取出鼠标信息
+    Mouse mouse;
+    memcpy(&mouse.action, packet->body, packet->header.body_len);
+    std::cout << "x = " << mouse.ptXY.x << ", y = " << mouse.ptXY.y << std::endl;
+    // 设置鼠标位置（模拟鼠标事件）
+    SetCursorPos(mouse.ptXY.x, mouse.ptXY.y);
+    /*
+    enum ENUM_MOUSE {
+    MOUSE_MOVE = 1,  // 移动
+    MOUSE_LDOWN =2,  //左键按下
+    MOUSE_LUP = 3,
+    MOUSE_RDOWN = 4,  //右键按下
+    MOUSE_RUP = 5,
+    MOUSE_MDOWN =6,
+    MOUSE_MUP = 7,
+    MOUSE_LDLINK = 8, // 鼠标左键双击
+    MOUSE_RDLINK = 9,  // 右键双击
+    MOUSE_MDLINK = 10,
+    };
+    */
+    switch (mouse.action)
+    {
+    case MOUSE_MOVE:
+        SetCursorPos(mouse.ptXY.x, mouse.ptXY.y);
+        break;
+    case MOUSE_LDOWN:
+        //#define MOUSEEVENTF_MOVE        0x0001 /* mouse move */
+        //#define MOUSEEVENTF_LEFTDOWN    0x0002 /* left button down */
+        //#define MOUSEEVENTF_LEFTUP      0x0004 /* left button up */
+        //#define MOUSEEVENTF_RIGHTDOWN   0x0008 /* right button down */
+        //#define MOUSEEVENTF_RIGHTUP     0x0010 /* right button up */
+        //#define MOUSEEVENTF_MIDDLEDOWN  0x0020 /* middle button down */
+        //#define MOUSEEVENTF_MIDDLEUP    0x0040 /* middle button up */
+        //#define MOUSEEVENTF_XDOWN       0x0080 /* x button down */
+        //#define MOUSEEVENTF_XUP         0x0100 /* x button down */
+        mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, GetMessageExtraInfo());
+        break;
+    case MOUSE_LUP:
+        mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, GetMessageExtraInfo());
+        break;
+    case MOUSE_RDOWN:
+        mouse_event(MOUSEEVENTF_RIGHTDOWN, 0, 0, 0, GetMessageExtraInfo());
+        break;
+    case MOUSE_RUP:
+        mouse_event(MOUSEEVENTF_RIGHTUP, 0, 0, 0, GetMessageExtraInfo());
+        break;
+    case MOUSE_MDOWN:
+        mouse_event(MOUSEEVENTF_MIDDLEDOWN, 0, 0, 0, GetMessageExtraInfo());
+        break;
+    case MOUSE_MUP:
+        mouse_event(MOUSEEVENTF_MIDDLEUP, 0, 0, 0, GetMessageExtraInfo());
+        break;
+    case MOUSE_LCLICK:
+        mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, GetMessageExtraInfo());
+        break;
+    case MOUSE_RCLICK:
+        mouse_event(MOUSEEVENTF_RIGHTDOWN | MOUSEEVENTF_RIGHTUP, 0, 0, 0, GetMessageExtraInfo());
+        break;
+    case MOUSE_MCLICK:
+        mouse_event(MOUSEEVENTF_MIDDLEDOWN | MOUSEEVENTF_MIDDLEUP, 0, 0, 0, GetMessageExtraInfo());
+        break;
+    case MOUSE_LDCLICK:
+        mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, GetMessageExtraInfo());
+        mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, GetMessageExtraInfo());
+        break;
+    case MOUSE_RDCLICK:
+        mouse_event(MOUSEEVENTF_RIGHTDOWN | MOUSEEVENTF_RIGHTUP, 0, 0, 0, GetMessageExtraInfo());
+        mouse_event(MOUSEEVENTF_RIGHTDOWN | MOUSEEVENTF_RIGHTUP, 0, 0, 0, GetMessageExtraInfo());
+        break;
+    case MOUSE_MDCLICK:
+        mouse_event(MOUSEEVENTF_MIDDLEDOWN | MOUSEEVENTF_MIDDLEUP, 0, 0, 0, GetMessageExtraInfo());
+        mouse_event(MOUSEEVENTF_MIDDLEDOWN | MOUSEEVENTF_MIDDLEUP, 0, 0, 0, GetMessageExtraInfo());
+        break;
+    default:
+        break;
+    }
     return 0;
 }
 int HandleKeyBoard(Packet* packet) {
