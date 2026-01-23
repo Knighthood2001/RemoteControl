@@ -235,7 +235,19 @@ int HandleMouse(Packet* packet) {
     return 0;
 }
 int HandleKeyBoard(Packet* packet) {
-
+    KeyBoard keyboard;
+    memcpy(&keyboard.virtual_code, packet->body, packet->header.body_len);
+    INPUT input = { 0 };
+    input.ki.wVk = keyboard.virtual_code;
+    input.ki.wScan = 0;
+    input.ki.time = 0;
+    input.ki.dwFlags = keyboard.key_status; // 按钮状态
+    input.ki.dwExtraInfo = 0;
+    input.type = INPUT_KEYBOARD;
+    int ret = SendInput(1,&input, sizeof(INPUT));
+    if (ret > 0) {
+        std::cout << "成功执行键盘事件：" << keyboard.virtual_code << std::endl;
+    }
     return 0;
 }
 int HandleTest(Packet* packet) {

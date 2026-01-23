@@ -46,6 +46,11 @@ struct Mouse {
     POINT ptXY; // 鼠标的坐标
 };
 
+struct KeyBoard {
+    int virtual_code; // 虚拟码0x41等
+    int key_status;   // 按下/释放（0/1）
+};
+
 // 获取数据包长度
 int GetPacketLen(Packet* pck);
 
